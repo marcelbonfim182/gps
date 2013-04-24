@@ -5,16 +5,15 @@
         <title>Hello, World</title>
         <link href="jquery-mobile/jquery.mobile-1.2.0.min.css" rel="stylesheet" type="text/css" />
         <link href="styles/main.css" rel="stylesheet" type="text/css" />
-
         <script src="cordova.js" type="text/javascript"></script>
         <script src="jquery-mobile/jquery-1.8.2.min.js" type="text/javascript"></script>
         <script src="jquery-mobile/jquery.mobile-1.2.0.min.js" type="text/javascript"></script>
         <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
         <style type="text/css">
-	html {height: 100%}
-	body {height: 100%; margin:0; padding:0}
-	#map_canvas {height: 100%}
-</style>
+	        html {height: 100%}
+	        body {height: 100%; margin:0; padding:0}
+	        #map_canvas {height: 100%}
+        </style>
     
 <script type="text/javascript" charset="utf-8">
 
@@ -23,25 +22,27 @@
     var watchID = null;
 
     // Cordova is ready
-    //
+    // enableHighAccuracy: true - HABILITA RECEPÇÃO DE DADOS VIA GPS DO APARELHO, SE GPS NÃO ESTIVER LIGADO, ELE TRIANGULA PELO WIFI.
+    //frequency: 100 - FREQUENCY DE CONSULTA NO GPS = 100 MILISEGUNDOS
+    
+
     function onDeviceReady() {
-        // Throw an error if no update is received every 30 seconds
         var options = { maximumAge: 3000, timeout: 5000, enableHighAccuracy: true, frequency: 100  };
         watchID = navigator.geolocation.watchPosition(onSuccess, onError, options);
     }
 
-    // onSuccess Geolocation
-    //
+    // VARIAVEIS QUE RETIRAM POSIÇÃO DA FUNÇÃO onSuccess
     var late = null;
     var longe = null;
     
     
+     // FUNÇÃO onSuccess CORDOVA GPS
     function onSuccess(position) {
         late = position.coords.latitude
         longe = position.coords.longitude
         
         var element = document.getElementById('geolocation');
-         element.innerHTML = 'Latitude: '           + position.coords.latitude              + '<br />' +
+         element.innerHTML = 'Latitude: '          + position.coords.latitude              + '<br />' +
                             'Longitude: '          + position.coords.longitude             + '<br />' +
                             'Altitude: '           + position.coords.altitude              + '<br />' +
                             'Accuracy: '           + position.coords.accuracy              + '<br />' +
@@ -55,13 +56,15 @@
         $("#lat").val(position.coords.latitude);
         $("#long").val(position.coords.longitude);
         
+        //CHAMA FUNÇÃO QUE ATUALIZA POSIÇÃO DO MARKER
         MoveMarkerAndCircle(late, longe);
+        
+        //CHAMA FUNÇÃO QUE CENTRALIZA O MAPA RELATIVO AO MARKER
         map.setCenter(myLocationMarker.getPosition()); 
-        }
+        
+    }
 
-          // clear the watch that was started earlier
-   
-    // 
+    // clear the watch that was started earlier
     function clearWatch() {
         if (watchID != null) {
             navigator.geolocation.clearWatch(watchID);
@@ -70,51 +73,76 @@
     }
 
     // onError Callback receives a PositionError object
-    //
     function onError(error) {
         alert('code: '    + error.code    + '\n' +
               'message: ' + error.message + '\n');
     }  
     
-// globals
-var watchID = null;
-var map = null;
-var myLocationMarker = null;
-var searchCircle = null;
-var myLocation = null;
-	
-function onLoad() {
-	startGPS();
-}
+    // globals
+    var watchID = null;
+    var map = null;
+    var myLocationMarker = null;
+    var searchCircle = null;
+    var myLocation = null;
+    var directionsService = new google.maps.DirectionsService();
 
-function onUnLoad() {
-	console.log("clearing watch " + watchID);
-}
+    // INICIA APLICAÇÃO
+    function onLoad() {
+	    startGPS();
+    }
+
+    function onUnLoad() {
+	    console.log("clearing watch " + watchID);
+    }
     
-function startGPS() {
-	// simulate getting position from GPS
+    function startGPS() {
+    // VARIAVEL QUE RECEBE POSIÇÃO
 	myLocation = new google.maps.LatLng(late, longe);
 	
-	// create Google map
-  var mapOptions = {
-    zoom: 16,
-    center: new google.maps.LatLng(-19.9292649541961, -43.932059362934),
-    mapTypeId: google.maps.MapTypeId.ROADMAP,
-    mapTypeControl: false,
-    streetViewControl: false,
-  };
-  var rendererOptions = {	draggable: false	};
-	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
-	google.maps.event.trigger(map, 'resize');
+    // CRIANDO MAPA
+    var mapOptions = {
+        zoom: 16,
+        center: new google.maps.LatLng(-19.9292649541961, -43.932059362934),
+        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeControl: false,
+        disableDefaultUI: true,
+        streetViewControl: false,
+    };
+    
+    var rendererOptions = {	draggable: false	};
+    
+      // RENDERIZA MAPA NA <BODY> DENTRO DA DIV COM ID 'map_canvas'
+	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);     
+
+        
+    
+    //............... GET DIRECTIONS.................//
+        
+    // RENDERIZA DIRECTIONS NO MAPA
+    directionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
+        
+    // VINCULA O MAPA COM AS DIREÇÕES SOLICITADAS
+	directionsDisplay.setMap(map);
 	
+    // GETDIRECTIONS: Escreve as direções dentro do conteiner (div) com id:directionsPanel
+	directionsDisplay.setPanel(document.getElementById("directionsPanel"));    
+
+    //............... GET DIRECTIONS END.................//
+     
+        
+ 
+	
+    // COLOCA E DEFINE MARKER NO MAPA (GEOLOCATION)
 	myLocationMarker = new google.maps.Marker({
 		title: 'This is me!',
 		zIndex: 90,
 		optimized: false,
+        icon: 'img/ball.svg',
 		map:map,
 		position: myLocation
 	});		
 
+    /*/ COLOCA CIRCULO EM VOLTA DO MARKER
 	searchCircle = new google.maps.Circle({
 		fillColor: '#c0e4dd',
 		strokeColor: '#f15f22',
@@ -123,27 +151,94 @@ function startGPS() {
 		map:map,
 		center:myLocation
 	});
-	// using bindTo instead does not fix the problem
-//	searchCircle.bindTo('center', myLocationMarker, 'position'); //This will set the circle bound to the marker at center
-}
-
-var MoveMarkerAndCircle = function(lat, lng) {
-	
-    myLocation = new google.maps.LatLng(lat, lng);
-	myLocationMarker.setPosition(myLocation);
-	
-	searchCircle.setCenter(myLocation);
+    /*/         
 }
 
     
+//FUNÇÕES QUE ATUALIZAM POSIÇÃO DO MARKER
+    
+var MoveMarkerAndCircle = function(lat, lng) {	
+    myLocation = new google.maps.LatLng(lat, lng);
+	myLocationMarker.setPosition(myLocation);
+	//searchCircle.setCenter(myLocation);
+}
+   
     var GenerateFakeMovement = function() {
 	MoveMarkerAndCircle(late, longe);      
 }
+    
+    
+    
+//FUNÇÃO GET DIRECTIONS     
+function calcRoute() {
+	// get the travelmode, startpoint and via point from the form		
+	var travelMode = $('input[name="travelMode"]:checked').val();
+    var start = "Rua dos Guajajaras, 1172 Belo Horizonte MG";
+	var end = "Rua dos Paraíba, 330 Belo Horizonte MG";
+	// compose a array with options for the directions/route request
+	var request = {
+		origin: start,
+		destination: end,
+		unitSystem: google.maps.UnitSystem.IMPERIAL,
+		travelMode: google.maps.DirectionsTravelMode[travelMode]
+	};
+	// call the directions API
+	directionsService.route(request, function(response, status) {
+		if (status == google.maps.DirectionsStatus.OK) {
+			// directions returned by the API, clear the directions panel before adding new directions
+			$('#directionsPanel').empty();
+			// display the direction details in the container
+			directionsDisplay.setDirections(response);
+		} else {
+			// alert an error message when the route could nog be calculated.
+			if (status == 'ZERO_RESULTS') {
+				alert('No route could be found between the origin and destination.');
+			} else if (status == 'UNKNOWN_ERROR') {
+				alert('A directions request could not be processed due to a server error. The request may succeed if you try again.');
+			} else if (status == 'REQUEST_DENIED') {
+				alert('This webpage is not allowed to use the directions service.');
+			} else if (status == 'OVER_QUERY_LIMIT') {
+				alert('The webpage has gone over the requests limit in too short a period of time.');
+			} else if (status == 'NOT_FOUND') {
+				alert('At least one of the origin, destination, or waypoints could not be geocoded.');
+			} else if (status == 'INVALID_REQUEST') {
+				alert('The DirectionsRequest provided was invalid.');					
+			} else {
+				alert("There was an unknown error in your request. Requeststatus: \n\n"+status);
+			}
+		}
+	});
+}
+
+//FUNÇÃO MUDA TRAVEL MODE chamando funcão "calcRoute();"  
+$(document).ready(function() {
+ $("input[name='travelMode']").click(function(){
+         calcRoute();
+ });
+});
+    
+ 
+    
 </script>
 </head>
 <body  style="height:100%;text-align:center" onunload="onUnLoad()" onload="startGPS()">
 	<div id="map_canvas" style="width: 100%;height:300px"></div>
 	<Button href='#' onclick="GenerateFakeMovement();" style="padding-top:5px">MOVE MARKER AND CIRCLE</Button>
     <div id="geolocation"></div>
+	<form action="/routebeschrijving" onSubmit="calcRoute();return false;" id="routeForm" style="display:table; width:100%;">
+			<div>
+				<label>Modo de viagem</label>
+				<label><input type="radio" name="travelMode" value="DRIVING" checked="cheked" /> Veículo Particular</label>
+				<label><input type="radio" name="travelMode" value="BICYCLING" /> Bicicleta</label>
+				<label><input type="radio" name="travelMode" value="TRANSIT" /> Transporte Público</label>
+				<label><input type="radio" name="travelMode" value="WALKING" /> Á pé</label>
+			</div>
+		<input type="submit" value="Calculate route" style="display:table">
+	</form>
+    <div id="directionsPanel">
+		Enter a starting point and click "Calculate route".
+	</div>
+
+
 </body>
 </html>
